@@ -1,4 +1,7 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 
 void main() {
   runApp(const MainApp());
@@ -12,7 +15,7 @@ class MainApp extends StatefulWidget {
 }
 
 class _MainAppState extends State<MainApp> {
-  int itemCount = 10;
+  List<Post> posts = [];
 
   @override
   Widget build(BuildContext context) {
@@ -42,12 +45,12 @@ class _MainAppState extends State<MainApp> {
                   gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: 3,
                   ),
-                  itemCount: itemCount,
+                  itemCount: posts.length,
                   itemBuilder: (_, index) => SizedBox.square(
                     child: Padding(
                       padding: const EdgeInsets.all(4),
                       child: Image.network(
-                        'https://preview.redd.it/does-anyone-other-than-me-know-where-this-cat-is-from-lol-v0-img24gu05lfb1.jpg?width=1080&crop=smart&auto=webp&s=c3f0a1639fc3a21e04864423c108302d5a36ff8b',
+                        posts[index].url,
                         width: double.infinity,
                         height: double.infinity,
                         fit: BoxFit.cover,
@@ -57,9 +60,26 @@ class _MainAppState extends State<MainApp> {
                 ),
               ),
               ElevatedButton(
-                  onPressed: () => setState(() {
-                        itemCount += 10;
-                      }),
+                  onPressed: () async {
+                    final uri = Uri.parse('https://cloud-api.yandex.net/v1/disk/resources/files');
+
+                    final response = await http.get(uri, headers: {
+                      'Authorization':
+                          'OAuth y0_AgAAAAB2L-uYAADLWwAAAAELcwzsAAA6De9FER5NmryjnCAdpZIwFnDNZQ'
+                    });
+
+                    if (response.statusCode != 200) {
+                      throw Exception('Failed to load posts: ${response.reasonPhrase}');
+                    }
+
+                    final result = (json.decode(response.body)['items'] as List<dynamic>)
+                        .map((post) => Post(url: post['sizes'].first['url']))
+                        .toList();
+
+                    setState(() {
+                      posts = result;
+                    });
+                  },
                   child: const Text('Загрузить ещё')),
             ],
           ),
@@ -67,4 +87,10 @@ class _MainAppState extends State<MainApp> {
       ),
     );
   }
+}
+
+class Post {
+  final String url;
+
+  Post({required this.url});
 }
