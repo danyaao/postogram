@@ -72,10 +72,12 @@ class _MainAppState extends State<MainApp> {
                       throw Exception('Failed to load posts: ${response.reasonPhrase}');
                     }
 
-                    final result = PostMultipleDto.fromJson(json.decode(response.body));
+                    final result = (json.decode(response.body)['items'] as List<dynamic>)
+                        .map((post) => Post(url: post['sizes'].first['url']))
+                        .toList();
 
                     setState(() {
-                      posts = result.items.map((item) => Post(url: item.sizes.first.url)).toList();
+                      posts = result;
                     });
                   },
                   child: const Text('Загрузить ещё')),
@@ -84,44 +86,6 @@ class _MainAppState extends State<MainApp> {
         ),
       ),
     );
-  }
-}
-
-class PostMultipleDto {
-  final List<PostDto> items;
-
-  PostMultipleDto({required this.items});
-
-  factory PostMultipleDto.fromJson(Map<String, dynamic> json) {
-    return PostMultipleDto(
-      items: (json['items'] as List<dynamic>).map((item) => PostDto.fromJson(item)).toList(),
-    );
-  }
-}
-
-class PostDto {
-  final String path;
-  final List<PhotoDto> sizes;
-  final DateTime created;
-
-  PostDto({required this.path, required this.sizes, required this.created});
-
-  factory PostDto.fromJson(Map<String, dynamic> json) {
-    return PostDto(
-      path: json['path'],
-      sizes: (json['sizes'] as List<dynamic>).map((size) => PhotoDto.fromJson(size)).toList(),
-      created: DateTime.parse(json['created']),
-    );
-  }
-}
-
-class PhotoDto {
-  final String url;
-
-  PhotoDto({required this.url});
-
-  factory PhotoDto.fromJson(Map<String, dynamic> json) {
-    return PhotoDto(url: json['url']);
   }
 }
 
